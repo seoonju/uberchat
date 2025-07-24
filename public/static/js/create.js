@@ -22,7 +22,12 @@ Create = {
     },
 
     success: function(data) {
-        window.location.href = data.url;
+        var url = data.url;
+        if (url && url.startsWith('/')) { // Ensure the URL is relative
+            window.location.href = url;
+        } else {
+            alert("Invalid redirect URL");
+        }
     },
 
     error: function(data) {
