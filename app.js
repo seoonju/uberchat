@@ -5,6 +5,8 @@ and send out links to your friends.
 
 var sys = require("sys");
 var express = require("express");
+var helmet = require("helmet");
+var rateLimit = require("express-rate-limit");
 var app = express.createServer();
 
 // Configuration
@@ -14,6 +16,16 @@ app.use(express.cookieParser({"secret": config.cookieSecret}));
 app.use(express.bodyParser());
 app.set("view engine", "ejs");
 app.set("view options", { layout: false });
+
+// Disable X-Powered-By header
+app.use(helmet.hidePoweredBy());
+
+// Rate limiting middleware
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100 // limit each IP to 100 requests per windowMs
+});
+app.use(limiter);
 
 // Routes
 app.get("/", function(req, res) {
@@ -30,6 +42,8 @@ app.post("/room", function(req, res) {
     if (!xsrf || !matchXsrf || !(xsrf == matchXsrf))
         return res.send({ error: "Unauthorized"}, 403);
     var name = req.body.name;
+    if (typeof name !== 'string') // Type checking
+        return res.send({ error: "Invalid name type."}, 400);
     res.header('content-type', 'application/json');
     name = name.replace(/^\s+|\s+$/, "");
     if (!name || name.length < 4 || name.replace(/^[\w\s]+$/, "") != "")
